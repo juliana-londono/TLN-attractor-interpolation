@@ -18,7 +18,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 import time
 
-
 #define the network dynamics: forward
 class CTLN(nn.Module):
   def __init__(self,W,theta,delta_t):
@@ -47,10 +46,10 @@ class CTLN(nn.Module):
 eps = 0.25;
 delta = 0.5;
 delta_t = .1 #time step for forward euler
-time = 500
+time = 1000
 
-#desired TLN: fusion 3-cycle
-G_desired = torch.tensor([[0,0,1,1],[1,0,0,1],[0,1,0,1],[1,1,1,0]])
+#desired TLN: 4-cycu
+G_desired = torch.tensor([[0,0,0,1],[1,0,1,0],[1,1,0,0],[0,1,1,0]])
 num_neurons = G_desired.size()[0]
 Gcomplement_desired = (1-G_desired)*(1-torch.eye(num_neurons))
 W_desired =  torch.eye(num_neurons)-1 + eps*G_desired - \
@@ -66,14 +65,18 @@ x_desired = net_desired(x0_desired,u).detach()
 neurons_to_fit = [1,2,3,0]
 x_desired = x_desired[neurons_to_fit,:]
 
-#initial TLN
+#initial TLN: n-cycle
 num_neurons = 4
-W = torch.tensor([[-0.        , -1.6403357 , -1.0484158 , -0.8306637 ],
-                  [-0.6869075 ,  0.        , -0.69358283, -1.4892764 ],
-                  [-0.627378  , -0.6826982 , -0.        , -0.66360927],
-                  [-1.463019  , -0.768413  , -0.68058753,  0.        ]])
+#G = torch.roll(torch.eye(num_neurons),1,0)
+#Gcomplement = (1-G)*(1-torch.eye(num_neurons))
+#W =  torch.eye(num_neurons)-1 + eps*G - delta*Gcomplement
+W = torch.tensor([[-0.0000, -1.2413, -1.8114, -1.0379],
+                  [-0.4906,  0.0000, -1.3606, -0.6023],
+                  [-0.9550, -0.5626, -0.0000, -1.5179],
+                  [-1.5558, -1.4238, -0.7326,  0.0000]])
 W_initial = W
-theta = torch.tensor([1.2136344 , 0.9496548 , 0.95102084, 0.95072615])
+#theta = torch.ones(num_neurons)
+theta = torch.tensor([1.2706, 0.8594, 1.0083, 0.9905])
 theta_initial = theta
 x0 = torch.zeros(num_neurons)
 x0[1]  = 0.1
@@ -84,7 +87,7 @@ net = CTLN(W,theta,delta_t)
 x = net(x0,u)
 
 #plot check
-plt.figure()
+fig1 = plt.figure()
 plt.gca().set_prop_cycle(None) #to reset the color cycle so both neurons i in initial
 #and desired are the same color
 plt.plot(x_desired.detach().numpy().T,
@@ -98,7 +101,7 @@ plt.title("x_desired solid, x_current dotted")
 plt.show()
 
 #learn!
-num_iter= 20000
+num_iter= 10000
 lr=0.00005
 
 opt = optim.Adam(net.parameters(),lr=lr)
@@ -117,7 +120,7 @@ for it in range(num_iter):
   #plot/print every 100 iterations
   if not it%100:
      print("iter = %i" %it + ", loss = %f" %loss.detach().numpy())
-  if not it%100:
+"""   if not it%100:
     plt.cla() #clear axes
     plt.gca().set_prop_cycle(None) #restart colors to match i with i
     plt.plot(x_desired.detach().numpy().T)
@@ -127,7 +130,7 @@ for it in range(num_iter):
     plt.show()
     #let me pause and see
     #input("~~~~~~~~~~Press Enter to continue~~~~~~~~~~")
-    plt.close()
+    plt.close() """
 
 fig3 = plt.figure()
 ax = plt.subplot(2, 1, 1)
@@ -176,5 +179,5 @@ for i in range(len(axs)):
 fig4.colorbar(pc, shrink=1, ax=axs, location='bottom')
 plt.show()
 
-np.savetxt('W_final_fusion3cycle.csv', W_out, delimiter=',')
-np.savetxt('theta_final_fusion3cycle.csv', theta_out, delimiter=',')
+np.savetxt('W_final_4cycu.csv', W_out, delimiter=',')
+np.savetxt('theta_final_4cycu.csv', theta_out, delimiter=',')
