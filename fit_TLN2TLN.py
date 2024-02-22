@@ -147,7 +147,6 @@ plt.show()
 W_out = net.W.detach().numpy()
 theta_out = net.theta.detach().numpy()
 
-
 #plot all the Ws
 matrices_to_plot = [W_initial.detach().numpy(),
                     theta_initial.detach().numpy().reshape((x.shape[0],1)),
